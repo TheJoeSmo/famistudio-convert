@@ -12,6 +12,7 @@ include = [
 [tool.poetry.dependencies]
 python = "^3.10"
 pretty-errors = "^1.2.25"
+attrs = "^22.1.0"
 
 [tool.poetry.dev-dependencies]
 isort = "^5.10.1"
