@@ -1,6 +1,9 @@
+from collections.abc import Sequence
 from enum import Enum, auto
 
 from attr import attrs
+
+from .pattern import Pattern, PatternInstance
 
 
 class ChannelType(Enum):
@@ -53,3 +56,8 @@ class ChannelType(Enum):
 @attrs(slots=True, auto_attribs=True, eq=True, hash=True, frozen=True)
 class Channel:
     type: ChannelType
+    patterns: Sequence[Pattern]
+
+    @property
+    def pattern_instances(self) -> tuple[PatternInstance, ...]:
+        return tuple((i, p) for i, p in enumerate(self.patterns))

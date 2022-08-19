@@ -1,7 +1,10 @@
+from collections.abc import Sequence
+
 from attr import attrs
 
 from ..arpeggio import Arpeggio
 from ..instruments import Instrument
+from .effects import Effect
 from .note import Note
 from .simple import SimpleNote
 from .types import MusicalNoteType
@@ -15,6 +18,7 @@ class MusicalNote(Note):
     instrument_: Instrument
     arpeggio_: Arpeggio
     slide_note: SimpleNote
+    effects: Sequence[Effect]
 
     @property
     def type(self) -> MusicalNoteType:
