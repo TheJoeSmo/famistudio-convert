@@ -1,5 +1,5 @@
-import famistudio_converter.core.instruments as instruments
-import famistudio_converter.core.notes as notes
+import famistudio_convert.core.instruments as instruments
+import famistudio_convert.core.notes as notes
 
 from .arpeggio import Arpeggio as Arpeggio
 from .channel import Channel as Channel

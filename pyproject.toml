@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "famistudio-convert"
+name = "famistudio_converter"
 version = "0.1.0"
 description = "Converts famistudio files into Python readable data"
 authors = ["TheJoeSmo <joesmo.joesmo12@gmail.com>"]
