@@ -6,7 +6,6 @@ from attr import attrs
 _effects = {}
 
 
-@attrs(slots=True, auto_attribs=True, eq=True, hash=True, frozen=True)
 class MetaEffect(type):
     def __new__(meta, name, bases, attrs):
         cls: type[Effect] = type.__new__(meta, name, bases, attrs)  # type: ignore

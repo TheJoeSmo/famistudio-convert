@@ -11,7 +11,6 @@ from ..expansion import Expansion
 _models = {}
 
 
-@attrs(slots=True, auto_attribs=True, eq=True, hash=True, frozen=True)
 class MetaInstrument(type):
     def __new__(meta, name, bases, attrs):
         cls: type[Instrument] = type.__new__(meta, name, bases, attrs)  # type: ignore
