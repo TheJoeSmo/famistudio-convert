@@ -1,6 +1,8 @@
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 
 from attr import attrs
+
+from .channel import Channel
 
 
 @attrs(slots=True, auto_attribs=True, eq=True, hash=True, frozen=True)
@@ -31,3 +33,4 @@ class Song:
     loop_point: int
     default_pattern: Pattern
     custom_pattern: Mapping[int, PatternList]
+    channels: Sequence[Channel]

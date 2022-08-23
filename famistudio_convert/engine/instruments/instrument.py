@@ -30,7 +30,7 @@ class Instrument:
     __expansion__: ClassVar[Expansion | None] = None
 
     title: str
-    envelope: list[Envelope]
+    envelopes: list[Envelope]
 
     @classmethod
     def get_instrument_from_user(cls, instrument_name: str) -> type[Instrument]:

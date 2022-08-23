@@ -1,3 +1,3 @@
-import famistudio_convert.core as core
+import famistudio_convert.engine as engine
 
-__all__ = [core]
+__all__ = [engine]

@@ -14,7 +14,7 @@ class Meta(type):
     __wrapped_class_bases__: MutableMapping[type, tuple[type]] = WeakKeyDictionary()
 
     def __new__(meta, name, bases, attrs):
-        cls = type.__new__(meta, name, bases, attrs)
+        cls = super().__new__(meta, name, bases, attrs)
         meta.__wrapped_class_bases__[cls] = bases
         for handler in cls.get_handlers(cls):
             cls = handler.validate(cls)
