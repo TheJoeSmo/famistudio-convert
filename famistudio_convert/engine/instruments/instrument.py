@@ -24,8 +24,7 @@ class MetaInstrument(type):
 
 
 @attrs(slots=True, auto_attribs=True, eq=True, hash=True, frozen=True)
-class Instrument:
-    __meta_class__: ClassVar[type] = MetaInstrument
+class Instrument(metaclass=MetaInstrument):
     __user_names__: ClassVar[Sequence[str]] = ()
     __expansion__: ClassVar[Expansion | None] = None
 

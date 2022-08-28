@@ -1,7 +1,9 @@
-from enum import Enum, auto
+from enum import auto
+
+from ..conversion import Attribute
 
 
-class Expansion(Enum):
+class Expansion(Attribute):
     VRC6 = auto()
     VRC7 = auto()
     FDS = auto()

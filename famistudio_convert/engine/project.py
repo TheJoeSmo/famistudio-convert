@@ -2,6 +2,7 @@ from collections.abc import Sequence
 
 from attr import attrs
 
+from ..conversion import Attribute
 from .arpeggio import Arpeggio
 from .expansion import Expansion
 from .instruments import Instrument
@@ -10,7 +11,7 @@ from .song import FamistudioPattern, Song
 
 
 @attrs(slots=True, auto_attribs=True, eq=True, hash=True, frozen=True)
-class Project:
+class Project(Attribute):
     title: str
     author: str
     copyright: str

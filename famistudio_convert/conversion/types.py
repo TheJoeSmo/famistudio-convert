@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from enum import Enum, auto
 
-from pkg_resources import resource_filename
+from ..data import read_text
 
-FAMISTUDIO_TEXT_PATH = "../data/famistudio_text.txt"
+FAMISTUDIO_TEXT_PATH = "famistudio_text.txt"
 
 
 class ConversionType:
@@ -21,8 +21,7 @@ class InternalConversionType(ConversionType, Enum):
 def load_internal(conversion_type: ConversionType) -> str:
     match conversion_type:
         case InternalConversionType.FAMISTUDIO_TEXT:
-            path = resource_filename(__package__, FAMISTUDIO_TEXT_PATH)
+            path = FAMISTUDIO_TEXT_PATH
         case _:
             raise NotImplementedError
-    with open(resource_filename(__package__, path)) as f:
-        return f.read()
+    return read_text(path)

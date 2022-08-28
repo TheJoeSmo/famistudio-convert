@@ -2,15 +2,17 @@ from collections.abc import Mapping
 
 from attr import attrs
 
+from ..conversion import Attribute
+
 
 @attrs(slots=True, auto_attribs=True, eq=True, hash=True, frozen=True)
-class Sample:
+class Sample(Attribute):
     title: str
     data: bytearray
 
 
 @attrs(slots=True, auto_attribs=True, eq=True, hash=True, frozen=True)
-class SampleNote:
+class SampleNote(Attribute):
     title: str
     pitch: int
     loop: bool

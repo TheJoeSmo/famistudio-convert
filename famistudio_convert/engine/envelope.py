@@ -1,5 +1,9 @@
 from enum import Enum, auto
 
+from attr import attrs
+
+from ..conversion import Attribute
+
 
 class EnvelopeType(Enum):
     VOLUME = auto()
@@ -13,7 +17,8 @@ class EnvelopeType(Enum):
     WAVEFORM_REPEAT = auto()
 
 
-class Envelope:
+@attrs(slots=True, auto_attribs=True, eq=True, hash=True, frozen=True)
+class Envelope(Attribute):
     type: EnvelopeType
     loop: int | None
     release: int | None

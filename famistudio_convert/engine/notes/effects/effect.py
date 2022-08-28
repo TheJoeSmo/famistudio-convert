@@ -19,6 +19,5 @@ class MetaEffect(type):
 
 
 @attrs(slots=True, auto_attribs=True, eq=True, hash=True, frozen=True)
-class Effect:
-    __meta_class__: ClassVar[type] = MetaEffect
+class Effect(metaclass=MetaEffect):
     __user_names__: ClassVar[Sequence[str]] = ()
