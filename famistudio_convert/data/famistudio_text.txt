@@ -2,7 +2,7 @@ $$Project[Project $version[Version="$version" ]TempoMode="$type" Name="$title" A
     $samples[$samples$#new_line$#tab]$sample_map[$sample_map$#new_line$#tab]$instruments[$instruments$#new_line$#tab]$arpeggios[$arpeggios$#new_line$#tab]$songs
 ]
 $$Sample[DPCMSample Name="$title" Data="$data"]
-$$SampleMap[DPCMMapping Note="$note" Sample="$sample" Pitch="$pitch" Loop="$loop" $initial_value[DmcInitialValue="$initial_value"]]
+$$SampleNote[DPCMMapping Note="$note" Sample="$sample" Pitch="$pitch" Loop="$loop" $initial_value[DmcInitialValue="$initial_value"]]
 $$Instrument[Instrument Name="$title" $expansion[Expansion="$expansion"] $expansion_data[$*expansion_data]
     $envelopes[$envelopes]]
 $$Expansion[$str]

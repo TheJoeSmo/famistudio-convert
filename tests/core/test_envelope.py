@@ -10,4 +10,5 @@ def envelop() -> Envelope:
 
 
 def test_envelope_conversion_simple(envelop: Envelope):
-    envelop.solve(DefaultConversionTypes.FAMISTUDIO_TEXT, 0)
+    result = envelop.solve(DefaultConversionTypes.FAMISTUDIO_TEXT, 0)
+    assert f'Envelope Type="{envelop.type}" Relative="False" Values=0, 1, 2, 3, 4' == result

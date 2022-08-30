@@ -3,10 +3,12 @@ from __future__ import annotations
 from collections import deque
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from contextlib import suppress
+from enum import Enum
 from logging import INFO, WARN
 from typing import ClassVar, TypeVar
 
 from attr import attrs
+from regex import Match, search
 
 from famistudio_convert.core.meta.register import RegisterMapHandler
 
@@ -24,14 +26,14 @@ _new_line_char = "\n"
 class WordHandler(Handler):
     @classmethod
     def solve(cls, _, found: str) -> str:
-        log.info(f"{cls.__name__} found {found}")
+        log.info(f"{cls.__name__} found '{found}'")
         return found
 
 
 @attrs(slots=True, auto_attribs=True, eq=True)
 class FieldDataHandler(Handler):
     @classmethod
-    def validate_balanced_brackets(cls, string: str) -> tuple[int, int]:
+    def validate_balanced_brackets(cls, string: str) -> None:
         # sourcery skip: for-index-underscore, remove-unused-enumerate
         brackets: deque[int] = deque()
         d: dict[int, int] = {}
@@ -50,18 +52,10 @@ class FieldDataHandler(Handler):
             log.error(f"{cls.__name__} found too many opening brackets for {string.split(_new_line_char)}")
             raise InvalidPatternException(f"'{string}' contains too many opening brackets")
 
-        first_bracket = min(d.keys())
-        return first_bracket, d[first_bracket]
-
     @classmethod
     def solve(cls, _, found: str) -> str:
-        if not found or found[0] != "[":
-            log.warning(f"{cls.__name__} requires {found.split(_new_line_char)} to start with '['")
-            return found
-        start, end = cls.validate_balanced_brackets(found)
-        result = found[start + 1 : end]
-        log.info(f"{cls.__name__} solved {result.split(_new_line_char)} from {found.split(_new_line_char)}")
-        return result
+        cls.validate_balanced_brackets(found)
+        return found
 
 
 @attrs(slots=True, auto_attribs=True, eq=True)
@@ -73,7 +67,8 @@ class HandleNewLine(Handler):
 
 
 WORD_PATTERN: Pattern = Pattern("([\\w]+)", WordHandler())
-FIELD_DATA_PATTERN: Pattern = Pattern("((.|\\n)*)", FieldDataHandler())
+FIELD_DATA_PATTERN: Pattern = Pattern("\\[([^\\]\\[]*+(?:(?R)[^\\[\\]]*)*+)\\]", FieldDataHandler())
+OPTIONAL_FIELD_DATA: str = "([_a-zA-Z][_a-zA-Z0-9]*)\\[([^\\]\\[]*+(?:(?R)[^\\[\\]]*)*+)\\]"
 NEW_LINE_PATTERN: Pattern = Pattern("new_line", HandleNewLine())
 
 
@@ -134,14 +129,14 @@ class Attribute(metaclass=Meta):
                 + f"inside {[c.__name__ for c in _RegisterAttribute.__registered_classes__.values()]}"
             )
             raise InvalidPatternException(f"{field} is not a valid attribute") from e
-        log.info(f"{cls.__name__} found {result.__name__} for field {field}")
+        log.info(f"{cls.__name__} found {result.__name__} for field '{field}'")
         return result  # type: ignore
 
     @classmethod
     def validate_field_names(cls, fields: Iterable[str]) -> Sequence[tuple[str, type[Attribute]]]:
         log.info(f"{cls.__name__} validating field names from {fields}")
         results = [(field, cls.validate_field_name(field)) for field in fields]
-        log.info(f"{cls.__name__} validated field names {results}")
+        log.info(f"{cls.__name__} validated field names {[(n, a.__name__) for (n, a) in results]}")
         return results
 
     @classmethod
@@ -160,27 +155,25 @@ class Attribute(metaclass=Meta):
 
     @classmethod
     def _solve_attribute(cls, attribute: object, type_: ConversionType, stared: bool, layer: int) -> str:
-        attribute_type = type(attribute)
-        match attribute_type:
-            case int() | str() | float() | bool() as attribute_type:
-                return str(attribute)
-            case list() | tuple() | set() as attribute_type:
-                objs = [cls._solve_attribute(obj, type_, False, layer + 1) for obj in attribute]  # type: ignore
-                return ", ".join(objs) if stared else "\t" * layer + "\n".join(objs)
-            case Attribute() as attribute_type:
-                return attribute.solve(attribute, type, layer + 1)  # type: ignore
-            case _:
-                log.error(f"{cls.__name__} does not implement a way to solve for {attribute_type}")
-                raise NotImplementedError
+        if isinstance(attribute, (int, str, float, bool, Enum)):
+            return str(attribute)
+        elif isinstance(attribute, (list, tuple, set)):
+            objs = [cls._solve_attribute(obj, type_, False, layer + 1) for obj in attribute]  # type: ignore
+            return ", ".join(objs) if stared else "\t" * layer + "\n".join(objs)
+        elif isinstance(attribute, Attribute):
+            return attribute.solve(attribute, type, layer + 1)  # type: ignore
+
+        log.error(f"{cls.__name__} does not implement a way to solve for {attribute.__class__.__name__}")
+        raise NotImplementedError
 
     def solve_attribute(self, attribute_name: str, type: ConversionType, stared: bool = False, layer: int = 0) -> str:
         attribute = getattr(self, attribute_name)
         log.info(
-            f"{self.__class__.__name__} solving for attribute {attribute} for '{type}' "
+            f"{self.__class__.__name__} solving for attribute '{attribute_name}' {attribute} for '{type}' "
             + f"on layer {layer} {'as a stared attribute' if stared else ''}"
         )
         result = self._solve_attribute(attribute, type, stared, layer)
-        log.info(f"{self.__class__.__name__} provided {result} for {attribute_name} of type '{type}'")
+        log.info(f"{self.__class__.__name__} provided '{result!s}' for {attribute_name} of type '{type}'")
         return result
 
 
@@ -197,13 +190,14 @@ class InternalHandler(GreedyHandler[_T]):
 class OptionalHandler(Handler[_A]):
     @classmethod
     def solve(cls, obj: _A, found: str, *args, **kwargs) -> str:
-        log.info(f"{cls.__name__} is solving {found} with {args} and {kwargs}")
-        attribute_name = WORD_PATTERN.solve(object, found)
-        log.info(f"{cls.__name__} found attribute '{attribute_name}'")
-        optional_field = ATTRIBUTE_PATTERN.solve(obj, found[len(attribute_name) :])
-        log.info(f"{cls.__name__} found optional field {optional_field.split(_new_line_char)}")
-        result = optional_field if attribute_name else ""
-        log.info(f"{cls.__name__} provided {result} from {found} with {args} and {kwargs}")
+        log.info(f"{cls.__name__} is solving '{found}' with {args} and {kwargs}")
+        re_match: Match[str] | None = search(OPTIONAL_FIELD_DATA, found[1:])
+        if re_match is None:
+            log.error(f"{cls.__name__} could not resolve optional field '{found[1:]}' with '{OPTIONAL_FIELD_DATA}'")
+            raise ValueError(f"{cls.__name__} could not resolve optional field '{found[1:]}'")
+        attribute_name: str = re_match[1]
+        result: str = ATTRIBUTE_PATTERN.solve(obj, re_match[2]) if getattr(obj, attribute_name, None) else ""
+        log.info(f"{cls.__name__} provided '{result}' from '{found}' with {args} and {kwargs}")
         return result
 
 
@@ -211,22 +205,24 @@ class OptionalHandler(Handler[_A]):
 class StaredAttributeHandler(Handler[_A]):
     @classmethod
     def solve(cls, obj: _A, found: str, type: ConversionType = ConversionType.default, layer: int = 0) -> str:
-        log.info(f"{cls.__name__} is solving {found} for {obj.__class__.__name__} of '{type}' on layer {layer}")
-        return obj.solve_attribute(found, type, True, layer)
+        log.info(f"{cls.__name__} is solving '{found}' for {obj.__class__.__name__} of '{type}' on layer {layer}")
+        return obj.solve_attribute(found[2:], type, True, layer)
 
 
 @attrs(slots=True, auto_attribs=True, eq=True)
 class SimpleAttributeHandler(Handler[_A]):
     @classmethod
     def solve(cls, obj: _A, found: str, type: ConversionType = ConversionType.default, layer: int = 0) -> str:
-        log.info(f"{cls.__name__} is solving {found} for {obj.__class__.__name__} of '{type}' on layer {layer}")
-        return obj.solve_attribute(found, type, False, layer)
+        log.info(f"{cls.__name__} is solving '{found}' for {obj.__class__.__name__} of '{type}' on layer {layer}")
+        return obj.solve_attribute(found[1:], type, False, layer)
 
 
-INTERNAL_PATTERN: Pattern = Pattern("\\$#([a-zA-Z0-9_]+)", InternalHandler())
-OPTIONAL_PATTERN: Pattern = Pattern("\\[((.|\\n)*)", OptionalHandler())
-STARED_PATTERN: Pattern = Pattern("\\$\\*([a-zA-Z0-9_]+)", StaredAttributeHandler())
-SIMPLE_PATTERN: Pattern = Pattern("\\*([a-zA-Z0-9_]+)", SimpleAttributeHandler())
+INTERNAL_PATTERN: Pattern = Pattern("(\\$#[a-zA-Z0-9_]+)", InternalHandler())
+OPTIONAL_PATTERN: Pattern = Pattern(
+    "(\\$[_a-zA-Z][_a-zA-Z0-9]*\\[([^\\]\\[]*+(?:(?R)[^\\[\\]]*)*+)\\])", OptionalHandler()
+)
+STARED_PATTERN: Pattern = Pattern("(\\$\\*[_a-zA-Z][_a-zA-Z0-9]*)", StaredAttributeHandler())
+SIMPLE_PATTERN: Pattern = Pattern("(\\$[_a-zA-Z][_a-zA-Z0-9]*)", SimpleAttributeHandler())
 
 
 @attrs(slots=True, auto_attribs=True, eq=True)
@@ -234,7 +230,9 @@ class AttributeHandler(GreedyHandler[_T]):
     __patterns__ = (OPTIONAL_PATTERN, INTERNAL_PATTERN, STARED_PATTERN, SIMPLE_PATTERN)
 
 
-ATTRIBUTE_PATTERN: Pattern = Pattern("\\$([\\s\\S]*)", AttributeHandler())
+ATTRIBUTE_PATTERN: Pattern = Pattern(
+    "(\\$[_a-zA-Z][_a-zA-Z0-9]+(\\[([^\\]\\[]*+(?:(?R)[^\\[\\]]*)*+)\\])?)", AttributeHandler()
+)
 
 
 def _solve(cls: Attribute, string: str, type: ConversionType, layer: int) -> str:

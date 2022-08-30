@@ -31,9 +31,9 @@ class Meta(type):
 
         return chain(
             class_handlers,
-            map(
+            *map(
                 lambda b: cls.get_handlers(b),
-                filter(lambda b: issubclass(b, Meta), cls.__wrapped_class_bases__[class_]),
+                filter(lambda b: isinstance(b, Meta), cls.__wrapped_class_bases__[class_]),
             ),
         )
 

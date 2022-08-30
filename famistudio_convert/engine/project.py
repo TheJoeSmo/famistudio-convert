@@ -6,7 +6,7 @@ from ..conversion import Attribute
 from .arpeggio import Arpeggio
 from .expansion import Expansion
 from .instruments import Instrument
-from .sample import Sample, SampleMap
+from .sample import Sample, SampleNote
 from .song import FamistudioPattern, Song
 
 
@@ -19,7 +19,7 @@ class Project(Attribute):
     is_pal: bool
     expansions: Sequence[Expansion]
     samples: Sequence[Sample]
-    sample_map: SampleMap
+    sample_map: Sequence[SampleNote]
     instruments: Sequence[Instrument]
     arpeggios: Sequence[Arpeggio]
     songs: Sequence[Song]

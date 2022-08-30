@@ -1,8 +1,7 @@
-from collections.abc import Mapping
-
 from attr import attrs
 
 from ..conversion import Attribute
+from .notes import PrimitiveMusicalNote
 
 
 @attrs(slots=True, auto_attribs=True, eq=True, hash=True, frozen=True)
@@ -12,11 +11,17 @@ class Sample(Attribute):
 
 
 @attrs(slots=True, auto_attribs=True, eq=True, hash=True, frozen=True)
-class SampleNote(Attribute):
-    title: str
+class _SampleNote:
+    sample: Sample
     pitch: int
     loop: bool
     initial_value: int
 
 
-SampleMap = Mapping[int, SampleNote]
+@attrs(slots=True, auto_attribs=True, eq=True, hash=True, frozen=True)
+class SampleNote(Attribute, _SampleNote):
+    index: int
+
+    @property
+    def note(self) -> PrimitiveMusicalNote:
+        return PrimitiveMusicalNote.from_value(self.index)

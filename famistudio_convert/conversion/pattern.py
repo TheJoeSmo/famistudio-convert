@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from re import Match, search
 from typing import ClassVar, Generic, TypeVar
 
 from attr import attrs
+from regex import Match, search
 
 from ..core import is_none, is_type, maybe
 from ..logging import log
@@ -20,12 +20,12 @@ class InvalidPatternException(ValueError):
 
 @attrs(slots=True, auto_attribs=True)
 class Handler(Generic[_T], ABC):
-    def __call__(self, obj: _T, found: str) -> str:
-        return self.solve(obj, found)
+    def __call__(self, obj: _T, found: str, *args, **kwargs) -> str:
+        return self.solve(obj, found, *args, **kwargs)
 
     @classmethod
     @abstractmethod
-    def solve(cls, obj: _T, found: str) -> str:
+    def solve(cls, obj: _T, found: str, *args, **kwargs) -> str:
         ...
 
 
@@ -34,10 +34,13 @@ class GreedyHandler(Handler[_T]):
     __patterns__: ClassVar[tuple[Pattern, ...]]
 
     @classmethod
-    def solve(cls, obj: _T, found: str) -> str:
-        log.info(f"{cls.__name__} solving {found} for {obj}")
+    def solve(cls, obj: _T, found: str, *args, **kwargs) -> str:
+        log.info(f"{cls.__name__} solving '{found}' for {obj}")
         for pattern in cls.__patterns__:
-            found = pattern.solve(obj, found)
+            # ignore case of empty string
+            if not found:
+                break
+            found = pattern.solve(obj, found, *args, **kwargs)
         return found
 
 
@@ -47,7 +50,7 @@ class Pattern(Generic[_T]):
     handler: Handler[_T]
 
     def __str__(self) -> str:
-        return f"{self.__class__.__name__}[{self.handler.__class__.__name__}, {self.pattern}]"
+        return f"{self.__class__.__name__}[{self.handler.__class__.__name__}]"
 
     def find_match(self, string: str) -> str | None:
         result = maybe(
@@ -55,15 +58,9 @@ class Pattern(Generic[_T]):
             start=is_none(self.pattern, string),
         )
         if result is None:
-            log.info(
-                f"{self!s} did not find match with pattern '{self.pattern}' "
-                + f"from string {string.split(_new_line_char)}."
-            )
+            log.info(f"{self!s} did not find match from string {string.split(_new_line_char)}.")
         else:
-            log.info(
-                f"{self!s} found {result.split(_new_line_char)} with pattern '{self.pattern}' "
-                + f"from string {string.split(_new_line_char)}."
-            )
+            log.info(f"{self!s} found {result.split(_new_line_char)} from string {string.split(_new_line_char)}.")
         return result
 
     def solve_match(self, cls: _T, found: str, *args, **kwargs) -> str:
@@ -92,8 +89,8 @@ class Pattern(Generic[_T]):
         assert isinstance(found, str)  # impossible state
         result = string.replace(found, solved_match, 1)
         log.info(
-            f"{self!s} provided {solved_match.split(_new_line_char)} from {found.split(_new_line_char)} "
-            + f"with {cls.__class__.__name__}, {args}, and {kwargs} resulting into {result.split(_new_line_char)}"
+            f"{self!s} replaced {found.split(_new_line_char)} to {result.split(_new_line_char)} "
+            + f"with {cls.__class__.__name__}, {args}, and {kwargs} with match {solved_match.split(_new_line_char)}"
         )
         return result
 
@@ -101,10 +98,10 @@ class Pattern(Generic[_T]):
         log.info(
             f"{self!s} solving {string.split(_new_line_char)} for " + f"{cls.__class__.__name__}, {args}, and {kwargs}"
         )
-        while found := self.find_match(string):
+
+        while (found := self.find_match(string)) and found:
             past_string = string
             string = self.solve_and_replace_next_match(cls, string, found, *args, **kwargs)
             assert past_string != string
-
         log.info(f"{self!s} solved result is {string.split(_new_line_char)}")
         return string

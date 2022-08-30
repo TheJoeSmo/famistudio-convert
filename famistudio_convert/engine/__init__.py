@@ -11,7 +11,6 @@ from .pattern import Pattern as Pattern
 from .pattern import PatternInstance as PatternInstance
 from .project import Project as Project
 from .sample import Sample as Sample
-from .sample import SampleMap as SampleMap
 from .sample import SampleNote as SampleNote
 from .song import FamistudioPattern as FamistudioPattern
 from .song import FamitrackerPattern as FamitrackerPattern
@@ -32,7 +31,7 @@ __all__ = [
     PatternInstance,
     Project,
     Sample,
-    SampleMap,
+    SampleNote,
     SampleNote,
     FamistudioPattern,
     FamitrackerPattern,
